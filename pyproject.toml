@@ -1,0 +1,44 @@
+[project]
+name = "ems-ceu"
+version = "0.1.0"
+description = "EMS_CEU web scraping framework with Firebase backend"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "EMS_CEU" }]
+dependencies = [
+  "httpx[http2]~=0.27",
+  "beautifulsoup4~=4.12",
+  "selectolax~=0.3",
+  "tenacity~=8.2",
+  "pydantic~=2.8",
+  "structlog~=24.1",
+  "python-dateutil~=2.9",
+  "firebase-admin~=6.5",
+  "google-cloud-firestore~=2.16",
+  "google-cloud-storage~=2.17",
+  "aiolimiter~=1.1",
+  "robotexclusionrulesparser~=1.7.1"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest~=8.3",
+  "pytest-asyncio~=0.23",
+  "mypy~=1.10",
+  "ruff~=0.5",
+  "types-python-dateutil"
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-q"
+pythonpath = ["src"]
+
+[build-system]
+requires = ["hatchling>=1.22"]
+build-backend = "hatchling.build"
+
