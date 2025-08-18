@@ -1,6 +1,8 @@
 # EMS_CEU
 
-A Python-based web scraping framework with Firebase (Firestore + Storage) persistence.
+A Python-based web scraping framework with Firebase (Firestore + Storage) persistence.\
+This repository now includes a headless browser service (Playwright) and a Python client wrapper for a modular, MCP-style scraping pipeline.
+This repository now includes a headless browser service (Playwright) and a Python client wrapper for a modular, MCP-style scraping pipeline.
 
 Structure
 - src/ems_ceu: core package
@@ -31,6 +33,22 @@ Security
 - Use the GOOGLE_APPLICATION_CREDENTIALS environment variable; do not print its value.
 
 Development
+
+Browser service (POC)
+- Start the browser service (requires Node 18+):
+  1) cd browser-service
+  2) npm install
+  3) npx playwright install --with-deps chromium
+  4) npm start
+- Health: GET http://127.0.0.1:8787/healthz
+- API: POST /session, /navigate, /waitFor, GET /content, POST /evaluate, /screenshot, POST /close
+
+Python client POC
+- Run a one-off render+extract from your venv:
+  - python -m ems_ceu.render https://example.org/ --wait-for body --field links:a:href --field headings:"h1, h2"
+
+Template example
+- See templates/sample_site.json for a declarative extractor.
 - Run tests: pytest
 - Lint/format: ruff check .
 

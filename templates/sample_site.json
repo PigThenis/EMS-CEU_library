@@ -1,0 +1,17 @@
+{
+  "start_url": "https://example.org/",
+  "wait_for": "body",
+  "fields": [
+    { "name": "links", "selector": "a", "attr": "href" },
+    { "name": "headings", "selector": "h1, h2, h3" }
+  ]
+}
+
+{
+  "start_url": "https://example.org/",
+  "wait_for": "body",
+  "fields": [
+    { "name": "links", "selector": "a", "attr": "href" },
+    { "name": "headings", "selector": "h1, h2, h3" }
+  ]
+}
