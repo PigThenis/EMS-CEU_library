@@ -32,9 +32,18 @@ htmlcov/
 
 # Node leftovers (if any)
 node_modules/
+frontend/.next/
+
+# Firebase emulator data
+.firebase-emulator-data/
+
+# Env files
+frontend/.env.local
 
 # Logs
 logs/
 *.log
+firebase-debug.log
+firestore-debug.log
 
 _ssh/

@@ -4,6 +4,7 @@ from typing import Optional, Any
 import base64
 from datetime import datetime, timezone
 
+import firebase_admin
 from firebase_admin import initialize_app
 from google.cloud import firestore, storage
 
@@ -24,7 +25,8 @@ class FirebaseRepo:
     def __init__(self, settings: Settings | None = None):
         self.settings = settings or Settings.from_env()
         # Requires GOOGLE_APPLICATION_CREDENTIALS env var. Do not print it.
-        initialize_app()
+        if not firebase_admin._apps:
+            initialize_app()
         self.db = firestore.Client(project=self.settings.project_id) if self.settings.project_id else firestore.Client()
         bucket_name = self.settings.storage_bucket
         if not bucket_name:
@@ -47,10 +49,18 @@ class FirebaseRepo:
         snap = self.db.collection("pages").document(url_hash).get()
         return snap.to_dict() if snap.exists else None
 
-    # ---- Items ----
+    # ---- Items / Events ----
     def upsert_item(self, item_id: str, data: dict[str, Any]) -> None:
         data = {**data, "updated_at": _utc_now_iso()}
         self.db.collection("items").document(item_id).set(data, merge=True)
+
+    def upsert_event_raw(self, event_id: str, data: dict[str, Any]) -> None:
+        data = {**data, "updated_at": _utc_now_iso()}
+        self.db.collection("events_raw").document(event_id).set(data, merge=True)
+
+    def upsert_event(self, event_id: str, data: dict[str, Any]) -> None:
+        data = {**data, "updated_at": _utc_now_iso()}
+        self.db.collection("events").document(event_id).set(data, merge=True)
 
     # ---- Runs ----
     def start_run(self, site: str) -> str:

@@ -1,0 +1,53 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Events collection - public read, admin write
+    match /events/{eventId} {
+      // Anyone can read published events
+      allow read: if resource.data.status == 'active';
+      // Only authenticated users with admin claim can write
+      allow write: if request.auth != null && 
+        request.auth.token.admin == true;
+    }
+    
+    // Events_raw collection - admin only
+    match /events_raw/{eventId} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.admin == true;
+    }
+    
+    // User profiles - users can manage their own profile
+    match /users/{userId} {
+      // Users can read/write their own profile
+      allow read, write: if request.auth != null && 
+        request.auth.uid == userId;
+      // Admins can read all profiles
+      allow read: if request.auth != null && 
+        request.auth.token.admin == true;
+    }
+    
+    // User saved events - users can manage their own saved events
+    match /users/{userId}/saved_events/{eventId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == userId;
+    }
+    
+    // User documents/certificates - users can manage their own docs
+    match /users/{userId}/documents/{docId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == userId;
+    }
+    
+    // Admin collections - admin only
+    match /admin/{document=**} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.admin == true;
+    }
+    
+    // Default deny rule for all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

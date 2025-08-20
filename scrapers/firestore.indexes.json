@@ -1,0 +1,47 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "published", "order": "ASCENDING"},
+        {"fieldPath": "start_date", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "events",
+      "queryScope": "COLLECTION", 
+      "fields": [
+        {"fieldPath": "published", "order": "ASCENDING"},
+        {"fieldPath": "course.type", "order": "ASCENDING"},
+        {"fieldPath": "start_date", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "published", "order": "ASCENDING"},
+        {"fieldPath": "location.state", "order": "ASCENDING"}, 
+        {"fieldPath": "start_date", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "start_date", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "events_raw",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "processed", "order": "ASCENDING"},
+        {"fieldPath": "scraped_at", "order": "ASCENDING"}
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

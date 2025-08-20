@@ -1,4 +1,4 @@
-// File: /mnt/c/users/user1/Project/EMS_CEU/frontend/app/layout.tsx
+// File: /Users/joelhorvath/Projects/EMS-CEU_library/frontend/app/layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

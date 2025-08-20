@@ -1,0 +1,168 @@
+# Docker Compose configuration for EMS Scraping Infrastructure
+version: '3.8'
+
+services:
+  # Redis for Celery message broker and caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL for persistent data (alternative to Firestore for development)
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ems_scraper
+      POSTGRES_USER: scraper
+      POSTGRES_PASSWORD: scraper123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scraper"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # EMS Scraper Application
+  scraper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=postgresql://scraper:scraper123@postgres:5432/ems_scraper
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-credentials.json
+    volumes:
+      - ./src:/app/src
+      - ./firebase-credentials.json:/app/firebase-credentials.json:ro
+      - ./logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: python -m src.main
+
+  # Celery Worker for distributed scraping
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=postgresql://scraper:scraper123@postgres:5432/ems_scraper
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-credentials.json
+    volumes:
+      - ./src:/app/src
+      - ./firebase-credentials.json:/app/firebase-credentials.json:ro
+      - ./logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: celery -A src.tasks worker --loglevel=info --concurrency=4
+    scale: 3
+
+  # Celery Beat for scheduled tasks
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=postgresql://scraper:scraper123@postgres:5432/ems_scraper
+    volumes:
+      - ./src:/app/src
+      - ./logs:/app/logs
+      - celery_beat_data:/app/celerybeat-schedule
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: celery -A src.tasks beat --loglevel=info --schedule=/app/celerybeat-schedule
+    restart: unless-stopped
+
+  # Flower for monitoring Celery tasks
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - celery-worker
+    command: celery -A src.tasks flower --port=5555
+    restart: unless-stopped
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+  # Grafana for metrics visualization
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+
+  # Nginx reverse proxy and load balancer
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - scraper
+      - flower
+      - grafana
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  postgres_data:
+  celery_beat_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  default:
+    name: ems_scraper_network

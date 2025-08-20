@@ -1,0 +1,32 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Public read access to clean events
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // Restrict raw events to server-side only
+    match /events_raw/{eventId} {
+      allow read, write: if false; // Only Cloud Functions can access
+    }
+    
+    // User data (when you add authentication later)
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Admin collections (for future use)
+    match /admin/{document=**} {
+      allow read, write: if false; // Add admin authentication later
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
