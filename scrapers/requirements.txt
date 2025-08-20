@@ -1,7 +1,0 @@
-# Ultra-minimal dependencies for free-tier scraping
-requests==2.31.0
-beautifulsoup4==4.12.2
-selectolax==0.3.17
-firebase-admin==6.5.0
-python-dateutil==2.9.0
-lxml==4.9.3
