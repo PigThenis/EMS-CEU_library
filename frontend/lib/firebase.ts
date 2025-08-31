@@ -31,7 +31,7 @@ if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
       const { connectFirestoreEmulator } = require('firebase/firestore');
       
       connectAuthEmulator(auth, 'http://localhost:9098', { disableWarnings: true });
-      connectFirestoreEmulator(db, 'localhost', 8081);
+      connectFirestoreEmulator(db, 'localhost', 8080);
       
       (globalThis as any).firebaseEmulatorsConnected = true;
       console.log('Connected to Firebase emulators');

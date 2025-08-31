@@ -1,0 +1,24 @@
+{
+  "name": "ems-ceu-library",
+  "version": "1.0.0",
+  "description": "EMS Continuing Education Library with Firebase",
+  "scripts": {
+    "emulators": "firebase emulators:start --project ems-ceu-library",
+    "emulators:all": "firebase emulators:start --only auth,functions,firestore,storage --project ems-ceu-library",
+    "emulators:data": "firebase emulators:start --only firestore,auth --project ems-ceu-library",
+    "emulators:functions": "firebase emulators:start --only functions,firestore --project ems-ceu-library",
+    "frontend": "cd frontend && npm run dev",
+    "scrape": "cd scrapers && python3 test_emulator.py",
+    "dev": "concurrently \"npm run emulators\" \"npm run frontend\"",
+    "test": "npm run scrape"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/ems-ceu-library.git"
+  },
+  "author": "",
+  "license": "MIT"
+}

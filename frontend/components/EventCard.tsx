@@ -1,5 +1,12 @@
+'use client'
+
 import classNames from 'classnames'
 import type { EventItem } from '@/app/api/events/route'
+
+interface EventCardProps {
+  e: EventItem
+  onClick?: (event: EventItem) => void
+}
 
 function formatDateRange(startISO: string, endISO?: string) {
   const start = new Date(startISO)
@@ -11,18 +18,24 @@ function formatDateRange(startISO: string, endISO?: string) {
   return `${startStr} – ${endStr}`
 }
 
-export default function EventCard({ e }: { e: EventItem }) {
+export default function EventCard({ e, onClick }: EventCardProps) {
   return (
-    <div className="rounded-lg border p-4 bg-white">
+    <div 
+      className="rounded-lg border p-4 bg-white hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer"
+      onClick={() => onClick?.(e)}
+    >
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="flex-1">
           <div className="text-sm text-slate-500">
             {e.city ? `${e.city}, ${e.state ?? 'TN'} · ` : ''}{formatDateRange(e.startDate, e.endDate)}
           </div>
           <div className="mt-1 font-semibold">{e.title}</div>
-          <div className="mt-1 text-sm text-slate-700">
-            {e.courseType ? `${e.courseType} · ` : ''}
-            {e.ceusTotal ? `${e.ceusTotal} CEUs` : 'CEUs: —'}
+          <div className="mt-1 text-sm text-slate-600">
+            {e.courseType ? `${e.courseType}` : ''}
+            {e.description && ` · ${e.description}`}
+          </div>
+          <div className="mt-1 text-xs text-slate-500">
+            CEUs: <span className="text-slate-400">TBD (pending verification)</span>
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             <span className={classNames('inline-flex items-center rounded-full px-2 py-0.5 text-xs border', {
@@ -39,7 +52,15 @@ export default function EventCard({ e }: { e: EventItem }) {
             ))}
           </div>
         </div>
-        <a href={e.id ? `/events/${e.id}` : (e.url ?? '#')} className="text-brand-700 text-sm shrink-0">Details</a>
+        <button 
+          onClick={(evt) => {
+            evt.stopPropagation()
+            onClick?.(e)
+          }}
+          className="text-blue-600 hover:text-blue-700 text-sm shrink-0 font-medium"
+        >
+          View Details →
+        </button>
       </div>
     </div>
   )
