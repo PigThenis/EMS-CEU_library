@@ -54,27 +54,42 @@ def scrapeNAEMT(req: https_fn.Request) -> https_fn.Response:
                 headers={'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'},
             )
 
-        # Scrape a conservative amount in emulator; allow fallback if network is blocked
+        # Scrape multiple pages to get more events (NAEMT has 10+ pages)
         try:
-            events = scraper.scrape(session, max_pages=3, timeout=15)
+            events = scraper.scrape(session, max_pages=10, timeout=15)
         except Exception as scrape_err:  # pylint: disable=broad-except
             print(f"Scrape error (non-fatal in emulator): {scrape_err}")
             events = []
 
+        # Import deduplication utilities
+        from deduplication import deduplicate_events, update_existing_event
+        
+        # Deduplicate events before saving
+        unique_events, duplicate_events, dedup_stats = deduplicate_events(db, events, site_name)
+        
         saved = 0
-        if events:
+        updated = 0
+        
+        # Save unique events
+        if unique_events:
             batch = db.batch()
-            for ev in events:
+            for ev in unique_events:
                 doc_ref = db.collection('events_raw').document()
                 batch.set(doc_ref, {
                     **ev,
-                    'site_name': site_name,
-                    'scraped_at': datetime.utcnow(),
-                    'processed': False,
-                    'status': 'pending',
+                    'last_seen': datetime.utcnow(),
+                    'times_seen': 1
                 })
             batch.commit()
-            saved = len(events)
+            saved = len(unique_events)
+        
+        # Update last_seen for duplicate events
+        for dup_event in duplicate_events:
+            if update_existing_event(db, dup_event['event_hash'], {'source_url': dup_event.get('source_url')}):
+                updated += 1
+        
+        print(f"Deduplication stats: {dedup_stats}")
+        print(f"Saved {saved} new events, updated {updated} existing events")
 
         return https_fn.Response(
             json.dumps({
@@ -82,6 +97,9 @@ def scrapeNAEMT(req: https_fn.Request) -> https_fn.Response:
                 'site': site_name,
                 'total_events': len(events),
                 'events_saved': saved,
+                'duplicates_found': len(duplicate_events),
+                'existing_updated': updated,
+                'deduplication': dedup_stats,
                 'timestamp': datetime.utcnow().isoformat(),
             }),
             status=200,

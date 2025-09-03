@@ -10,12 +10,26 @@ interface EventCardProps {
 
 function formatDateRange(startISO: string, endISO?: string) {
   const start = new Date(startISO)
-  if (!endISO) return start.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-  const end = new Date(endISO)
-  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
-  const startStr = start.toLocaleString(undefined, { month: 'short', day: 'numeric' })
-  const endStr = end.toLocaleString(undefined, sameMonth ? { day: 'numeric', year: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' })
-  return `${startStr} – ${endStr}`
+  const end = endISO ? new Date(endISO) : null
+  
+  // Single day or no end date
+  if (!end || start.toDateString() === end.toDateString()) {
+    return start.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+  
+  const sameYear = start.getFullYear() === end.getFullYear()
+  const sameMonth = start.getMonth() === end.getMonth() && sameYear
+  
+  if (sameMonth) {
+    // Same month and year: "Oct 6 - 7, 2025"
+    return `${start.toLocaleString('en-US', { month: 'short', day: 'numeric' })} - ${end.getDate()}, ${end.getFullYear()}`
+  } else if (sameYear) {
+    // Different months, same year: "Oct 6 - Nov 7, 2025"
+    return `${start.toLocaleString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleString('en-US', { month: 'short', day: 'numeric' })}, ${end.getFullYear()}`
+  } else {
+    // Different years: "Dec 30, 2025 - Jan 2, 2026"
+    return `${start.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${end.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+  }
 }
 
 export default function EventCard({ e, onClick }: EventCardProps) {
@@ -27,7 +41,8 @@ export default function EventCard({ e, onClick }: EventCardProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <div className="text-sm text-slate-500">
-            {e.city ? `${e.city}, ${e.state ?? 'TN'} · ` : ''}{formatDateRange(e.startDate, e.endDate)}
+            {e.city ? `${e.city}${e.state ? `, ${e.state}` : ''} · ` : ''}
+            {formatDateRange(e.startDate, e.endDate)}
           </div>
           <div className="mt-1 font-semibold">{e.title}</div>
           <div className="mt-1 text-sm text-slate-600">

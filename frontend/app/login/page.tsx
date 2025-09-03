@@ -123,8 +123,8 @@ export default function LoginPage() {
       
       <p className="mt-4 text-sm text-center">
         Don't have an account?{' '}
-        <Link href="/register" className="text-brand-700 hover:text-brand-800">
-          Sign up
+        <Link href="/onboarding" className="text-brand-700 hover:text-brand-800">
+          Create free profile
         </Link>
       </p>
     </div>

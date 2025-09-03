@@ -2,6 +2,9 @@
 
 import Button from '@/components/Button'
 import { useState } from 'react'
+import { GoogleSignInButton } from '@/components/GoogleSignInButton'
+import { useRouter } from 'next/navigation'
+import { signInWithGoogle } from '@/lib/auth'
 
 export default function OnboardingPage() {
   return (
@@ -50,42 +53,119 @@ function Step({ n, current, label }: { n: number, current: number, label: string
 }
 
 function AccountForm({ onNext }: { onNext: (userId: string) => void }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const router = useRouter()
+  
+  async function handleGoogleSignUp() {
+    setLoading(true)
+    setError('')
+    
+    try {
+      const user = await signInWithGoogle()
+      // For Google sign-ups, skip to step 2 with the user ID
+      onNext(user.uid)
+    } catch (err: any) {
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('Sign-in cancelled')
+      } else if (err.code === 'auth/popup-blocked') {
+        setError('Please allow popups for this site')
+      } else {
+        setError(err.message || 'Google sign-in failed')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+  
   async function handleSubmit(formData: FormData) {
+    setLoading(true)
+    setError('')
+    
     const email = String(formData.get('email') || '')
     const name = String(formData.get('name') || '')
     const password = String(formData.get('password') || '')
     const role = String(formData.get('role') || 'EMT')
-    const res = await fetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ email, name, password, role }) })
-    if (!res.ok) { alert('Registration failed'); return }
-    const data = await res.json()
-    onNext(data.id)
+    
+    try {
+      const res = await fetch('/api/auth/register', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name, password, role }) 
+      })
+      
+      const data = await res.json()
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Registration failed')
+      }
+      
+      // Success! Pass the user ID to the next step
+      onNext(data.user.uid)
+    } catch (err: any) {
+      setError(err.message || 'Registration failed')
+      console.error('Registration error:', err)
+    } finally {
+      setLoading(false)
+    }
   }
   return (
-    <form action={handleSubmit} className="grid gap-4">
+    <div className="space-y-4">
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+      
+      {/* Google Sign-In Option */}
       <div>
-        <label className="block text-sm">Full name</label>
-        <input name="name" required className="mt-1 w-full border rounded-md px-3 py-2" />
+        <GoogleSignInButton
+          onSuccess={() => handleGoogleSignUp()}
+          onError={(errorMessage) => setError(errorMessage)}
+          disabled={loading}
+          text="Sign up with Google"
+        />
       </div>
+      
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300" />
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white text-gray-500">Or sign up with email</span>
+        </div>
+      </div>
+      
+      {/* Email/Password Form */}
+      <form action={handleSubmit} className="grid gap-4">
+        <div>
+          <label className="block text-sm">Full name</label>
+          <input name="name" required className="mt-1 w-full border rounded-md px-3 py-2" disabled={loading} />
+        </div>
       <div>
         <label className="block text-sm">Email</label>
-        <input type="email" name="email" required className="mt-1 w-full border rounded-md px-3 py-2" />
+        <input type="email" name="email" required className="mt-1 w-full border rounded-md px-3 py-2" disabled={loading} />
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm">Password</label>
-          <input type="password" name="password" required className="mt-1 w-full border rounded-md px-3 py-2" />
+          <input type="password" name="password" required minLength={6} className="mt-1 w-full border rounded-md px-3 py-2" disabled={loading} />
+          <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
         </div>
         <div>
           <label className="block text-sm">Role</label>
-          <select name="role" className="mt-1 w-full border rounded-md px-3 py-2">
+          <select name="role" className="mt-1 w-full border rounded-md px-3 py-2" disabled={loading}>
             {['EMR','EMT','AEMT','Paramedic'].map(r => <option key={r} value={r}>{r}</option>)}
           </select>
         </div>
       </div>
       <div className="flex justify-end">
-        <Button type="submit">Continue</Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Creating account...' : 'Continue'}
+        </Button>
       </div>
-    </form>
+      </form>
+    </div>
   )
 }
 

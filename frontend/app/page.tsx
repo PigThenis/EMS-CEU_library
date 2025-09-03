@@ -10,7 +10,7 @@ export default function HomePage() {
               Tennessee EMS Continuing Education, Simplified
             </h1>
             <p className="mt-4 text-lg text-slate-700">
-              Search live, virtual, and hybrid courses with CEU details and categories—ACLS, PALS, NRP, PHTLS and more.
+              Search live, virtual, and hybrid courses with CEU details and categories—PHTLS, AMLS, GEMS, TCCC and more.
             </p>
             <div className="mt-6 flex gap-3">
               <a href="/events"><Button>Find CEUs</Button></a>
@@ -46,7 +46,7 @@ export default function HomePage() {
       <section className="mx-auto max-w-7xl px-4 py-14">
         <h2 className="text-2xl font-semibold">Featured categories</h2>
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-          {['ACLS','PALS','NRP','PHTLS','AMLS','BLS','Trauma','Pediatric'].map((c) => (
+          {['PHTLS','AMLS','GEMS','TCCC','TECC','REFRESHER','AHDR','EVOS'].map((c) => (
             <a key={c} href={`/events?category=${encodeURIComponent(c)}`}
                className="rounded-lg border p-4 hover:border-brand-500 hover:shadow-sm">
               <div className="font-medium">{c}</div>

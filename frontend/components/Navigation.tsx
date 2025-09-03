@@ -24,6 +24,16 @@ export function Navigation() {
           <Link href="/events" className="hover:text-brand-700">
             Browse
           </Link>
+          {process.env.NODE_ENV === 'development' && (
+            <>
+              <Link href="/admin/scraper" className="hover:text-brand-700 text-orange-600">
+                🔧 Admin
+              </Link>
+              <Link href="/admin/events" className="hover:text-brand-700 text-blue-600">
+                📊 All Events
+              </Link>
+            </>
+          )}
           {user && (
             <>
               <Link href="/saved" className="hover:text-brand-700">
@@ -58,10 +68,10 @@ export function Navigation() {
                 Sign in
               </Link>
               <Link
-                href="/register"
-                className="rounded-md bg-brand-600 px-3 py-1.5 text-white hover:bg-brand-700"
+                href="/onboarding"
+                className="rounded-md border border-brand-600 px-3 py-1.5 text-brand-700 hover:bg-brand-50 transition-colors"
               >
-                Sign up
+                Create free profile
               </Link>
             </div>
           )}

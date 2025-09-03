@@ -22,22 +22,31 @@ export const auth = getAuth(app);
 // Initialize Firestore
 export const db = getFirestore(app);
 
-// For development with emulators
-if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+// Control emulator connections via environment variables
+if (typeof window !== 'undefined') {
   // Use a flag to prevent multiple connections
   if (!(globalThis as any).firebaseEmulatorsConnected) {
     try {
-      const { connectAuthEmulator } = require('firebase/auth');
-      const { connectFirestoreEmulator } = require('firebase/firestore');
+      // Connect to Firestore emulator if enabled
+      if (process.env.NEXT_PUBLIC_USE_FIRESTORE_EMULATOR === 'true') {
+        const { connectFirestoreEmulator } = require('firebase/firestore');
+        connectFirestoreEmulator(db, 'localhost', 8080);
+        console.log('Connected to Firestore emulator');
+      }
       
-      connectAuthEmulator(auth, 'http://localhost:9098', { disableWarnings: true });
-      connectFirestoreEmulator(db, 'localhost', 8080);
+      // Connect to Auth emulator if enabled (disables real Google Sign-In)
+      if (process.env.NEXT_PUBLIC_USE_AUTH_EMULATOR === 'true') {
+        const { connectAuthEmulator } = require('firebase/auth');
+        connectAuthEmulator(auth, 'http://localhost:9098', { disableWarnings: true });
+        console.log('Connected to Auth emulator (Google Sign-In will use mock)');
+      } else {
+        console.log('Using production Firebase Auth (Google Sign-In will work)');
+      }
       
       (globalThis as any).firebaseEmulatorsConnected = true;
-      console.log('Connected to Firebase emulators');
     } catch (error) {
       // Emulators may already be connected or not available
-      console.log('Firebase emulators connection:', error);
+      console.log('Firebase connection:', error);
     }
   }
 }

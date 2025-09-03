@@ -11,31 +11,49 @@ export interface EventItem {
   venue?: string;
   modality: 'in-person' | 'virtual' | 'hybrid';
   ceusTotal?: number;
+  ceuHours?: number; // Alternative name for CEUs
   categories?: string[];
   courseType?: string; // ACLS, PALS, etc.
   description?: string;
   price?: number;
   url?: string;
+  provider?: string; // Overall organization (e.g., NAEMT, AHA)
+  instructor?: string; // Instructor name
+  scrapedAt?: string; // When scraped
+  siteName?: string; // Source site
 }
 
 // Initialize Firebase Admin SDK for server-side
 if (!getApps().length) {
-  // For emulator, we don't need credentials
-  if (process.env.NODE_ENV === 'development') {
+  // Check if we should use Firestore emulator based on environment variable
+  const useFirestoreEmulator = process.env.NEXT_PUBLIC_USE_FIRESTORE_EMULATOR === 'true';
+  
+  if (useFirestoreEmulator) {
+    console.log('🔧 Using Firestore emulator for server-side operations');
     process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
+    initializeApp({
+      projectId: 'demo-ems-ceu-library',
+    });
+  } else {
+    console.log('🚀 Using production Firestore for server-side operations');
+    // For production, initialize with default credentials
     initializeApp({
       projectId: 'ems-ceu-library',
     });
-  } else {
-    // For production, you'd initialize with service account
-    initializeApp();
   }
 }
 
 const db = getFirestore();
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Check if we just want a count
+    const url = new URL(request.url);
+    if (url.searchParams.get('count') === 'true') {
+      const countSnapshot = await db.collection('events_raw').get();
+      return Response.json({ count: countSnapshot.size });
+    }
+    
     // Fetch events from Firestore emulator
     const eventsSnapshot = await db.collection('events_raw')
       .orderBy('scraped_at', 'desc')
@@ -56,11 +74,16 @@ export async function GET() {
         venue: data.location,
         modality: determineModality(data.title, data.location),
         ceusTotal: extractCEUs(data.title),
+        ceuHours: extractCEUs(data.title),
         categories: [data.course_type].filter(Boolean),
         courseType: data.course_type,
         description: data.instructor ? `Instructor: ${data.instructor}` : undefined,
         price: undefined, // Not available in scraped data yet
-        url: data.source_url
+        url: data.source_url,
+        provider: data.site_name || 'NAEMT', // Site name represents the overall organization
+        instructor: data.instructor,
+        scrapedAt: data.scraped_at?.toDate?.()?.toISOString?.() || data.scraped_at,
+        siteName: data.site_name
       };
     });
     
